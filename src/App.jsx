@@ -3,7 +3,7 @@ import AuthPage      from './pages/AuthPage'
 import LinkPage      from './pages/LinkPage'
 import LoadingPage   from './pages/LoadingPage'
 import DashboardPage from './pages/DashboardPage'
-import { analyzeUrl } from './utils/mlEngine'
+import { predictPrice, logout } from './utils/api'
 
 // Must be >= sum of all LoadingPage step durations (700+600+800+500+400 = 3000ms)
 const ANALYSIS_DELAY_MS = 3200
@@ -19,13 +19,23 @@ export default function App() {
     setScreen('link')
   }
 
-  const handleAnalyze = (productUrl) => {
+  const handleAnalyze = async (productUrl) => {
     setUrl(productUrl)
     setScreen('loading')
-    setTimeout(() => {
-      setResult(analyzeUrl(productUrl))
-      setScreen('dashboard')
-    }, ANALYSIS_DELAY_MS)
+    
+    try {
+      const response = await predictPrice(productUrl);
+      if (response.data && response.data.prediction) {
+        setResult(response.data.prediction);
+        setScreen('dashboard');
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error) {
+      console.error('Analysis failed:', error);
+      alert('Failed to analyze URL. Please check the backend console and ensure the Python script works.');
+      setScreen('link');
+    }
   }
 
   const handleNewAnalysis = () => {

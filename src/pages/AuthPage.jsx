@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { login, signup } from '../utils/api'
 import styles from './AuthPage.module.css'
 
 export default function AuthPage({ onLogin }) {
@@ -8,16 +9,27 @@ export default function AuthPage({ onLogin }) {
 
   const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }))
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setErr('')
     if (!form.email || !form.password) return setErr('Please fill in all required fields.')
     if (!/\S+@\S+\.\S+/.test(form.email))  return setErr('Please enter a valid email address.')
-    if (tab === 'signup') {
-      if (!form.name)                        return setErr('Please enter your full name.')
-      if (form.password.length < 6)          return setErr('Password must be at least 6 characters.')
-      if (form.password !== form.confirm)    return setErr('Passwords do not match.')
+    
+    try {
+      if (tab === 'signup') {
+        if (!form.name)                        return setErr('Please enter your full name.')
+        if (form.password.length < 6)          return setErr('Password must be at least 6 characters.')
+        if (form.password !== form.confirm)    return setErr('Passwords do not match.')
+        
+        const response = await signup(form.name, form.email, form.password);
+        onLogin(response.data.user);
+      } else {
+        const response = await login(form.email, form.password);
+        onLogin(response.data.user);
+      }
+    } catch (error) {
+      console.error('Auth Error:', error);
+      setErr(error.response?.data?.message || 'Authentication failed. Make sure backend is running and configured.');
     }
-    onLogin({ name: form.name || form.email.split('@')[0], email: form.email })
   }
 
   const switchTab = (t) => { setTab(t); setErr('') }
